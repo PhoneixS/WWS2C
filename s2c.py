@@ -1,7 +1,9 @@
 import logging
 import re
 from enum import Enum
-from typing import List, Mapping
+from typing import List
+import json
+
 
 FILE_NAME = 'test_files/document.md'
 FILE_NAME_OUTPUT = 'test_files_output/document.json'
@@ -162,7 +164,18 @@ class Converter:
         return spells
     
     def save_as_json(self, spells: List[Spell], file_name: str):
-        pass
+        spells_converted = []
+        for spell in spells:
+            spells_converted.append({
+                'count': 1,
+                'title': spell.title,
+                'contents': [
+                    'subtitle | ' + spell.subtitle
+                ]
+            })
+        
+        with open(file_name, 'w') as file:
+            json.dump(spells_converted, file)
 
 def remove_and(text: str) -> str:
     if text.startswith('and '):
@@ -173,11 +186,6 @@ def main():
     
     converter = Converter()
     spells = converter.read(FILE_NAME)
-    for s in spells:
-        print('-----------')
-        print(s.title)
-        print(s.description)
-        print('+++++++++++')
     converter.save_as_json(spells, FILE_NAME_OUTPUT)
 
 if __name__ == '__main__':
