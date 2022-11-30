@@ -1,12 +1,14 @@
 import logging
 import re
 from enum import Enum
-from typing import List, Optional
+from typing import List, Mapping
 
 FILE_NAME = 'test_files/document.md'
 FILE_NAME_OUTPUT = 'test_files_output/document.json'
-RE_TITLE = re.compile(r'#### \[([^]\n]+)\]\(#spell-list\)\n')
-RE_SUBTITLE = re.compile(r'\*(.+) - ((((\d)(st|nd|rd|th)-level) (\w+))|((\w+) (cantrip)))( \(ritual\))?\*')
+RE_TITLE = re.compile(r'#### \[([^]\n]+)\]\(#spell-list\)\n', re.IGNORECASE)
+RE_SUBTITLE = re.compile(r'\*(.+) - ((((\d)(st|nd|rd|th)-level) (\w+))|((\w+) (cantrip)))( \(ritual\))?\*', re.IGNORECASE)
+RE_PROPERTY = re.compile(r'- \*\*(.+):\*\* +(.+)')
+RE_PROPERTY_TAG = re.compile(r'(Dark(, )?)?( - \*Unforgivable Curse\*)?(School of Magic - \*(.+)\*)?', re.IGNORECASE)
 
 class Spell:
     
@@ -15,7 +17,14 @@ class Spell:
         self.subtitle: str = None
         self.lvl: int = None
         self.type: str = None
-        self.is_ritual: bool = None
+        self.is_ritual: bool = False
+        self.description: str = ''
+        self.is_dark: bool = False
+        self.is_unforgivable: bool = False
+        self.schools: List[str] = []
+        self.casting_time: str = None
+        self.range: str = None
+        self.duration: str = None
 
 class ConverterStatus(Enum):
     NONE = 0,
@@ -31,8 +40,7 @@ class SpellReaderStatus(Enum):
     SUBTITLE = 3,
     PROPERTIES_START = 4,
     PROPERTIES_BODY = 5,
-    PROPERTIES_END = 6,
-    DESCRIPTION = 7
+    DESCRIPTION = 6
 
 class Converter:
     
@@ -64,6 +72,8 @@ class Converter:
         elif self.spell_reading_status == SpellReaderStatus.SUBTITLE:
             if line.startswith('*'):
                 subtitle_info = RE_SUBTITLE.match(line)
+                if not subtitle_info:
+                    logging.error('Found a subtitle line that doesn\'t match the regex: ' + line)
                 self._last_readed_spell.subtitle = subtitle_info.group(1)
                 self._last_readed_spell.lvl = int(subtitle_info.group(5) if subtitle_info.group(5) else 0)
                 self._last_readed_spell.type = subtitle_info.group(7) if subtitle_info.group(7) else subtitle_info.group(9)
@@ -72,6 +82,49 @@ class Converter:
             else:
                 logging.warning('After spell title must be a subtitle enclosed in *, but found ' + line)
                 self.spell_reading_status = SpellReaderStatus.PROPERTIES_START
+        elif self.spell_reading_status == SpellReaderStatus.PROPERTIES_START:
+            if line.startswith('___'):
+                self.spell_reading_status = SpellReaderStatus.PROPERTIES_BODY
+            else:
+                logging.warning('Found spell without properties, which is strange, line: ' + line)
+                self.spell_reading_status = SpellReaderStatus.DESCRIPTION
+                self._parse_spell_line(line)
+        elif self.spell_reading_status == SpellReaderStatus.PROPERTIES_BODY and line.startswith('___'):
+            self.spell_reading_status = SpellReaderStatus.DESCRIPTION
+        elif self.spell_reading_status == SpellReaderStatus.PROPERTIES_BODY:
+            self._parse_property_line(line)
+        elif self.spell_reading_status == SpellReaderStatus.DESCRIPTION:
+            self._last_readed_spell.description += line
+
+    def _parse_property_line(self, line: str):
+        property_info = RE_PROPERTY.match(line)
+        if not property_info:
+            logging.error('Found a subtitle line that doesn\'t match the regex: ' + line)
+        key = property_info.group(1).lower()
+        value = property_info.group(2)
+
+        if key == 'casting time':
+            self._last_readed_spell.casting_time = value
+        elif key == 'duration':
+            self._last_readed_spell.duration = value
+        elif key == 'range':
+            self._last_readed_spell.range = value
+        elif key == 'tags':
+            self._parse_tag(value)
+        else:
+            logging.warning('Unknow propertie ' + key)
+            
+
+
+    
+    def _parse_tag(self, tag: str):
+        tag_info = RE_PROPERTY_TAG.match(tag)
+        if not tag_info:
+            logging.error('Found a tag line that doesn\'t match the regex: ' + tag)
+        self._last_readed_spell.is_dark = bool(tag_info.group(1))
+        self._last_readed_spell.is_unforgivable = bool(tag_info.group(3))
+        if tag_info.group(5):
+            self._last_readed_spell.schools = [ remove_and(school) for school in tag_info.group(5).split(', ')]
 
     
     def read(self, file: str) -> List[Spell]:
@@ -111,10 +164,20 @@ class Converter:
     def save_as_json(self, spells: List[Spell], file_name: str):
         pass
 
+def remove_and(text: str) -> str:
+    if text.startswith('and '):
+        return text[4:]
+    return text
+
 def main():
     
     converter = Converter()
     spells = converter.read(FILE_NAME)
+    for s in spells:
+        print('-----------')
+        print(s.title)
+        print(s.description)
+        print('+++++++++++')
     converter.save_as_json(spells, FILE_NAME_OUTPUT)
 
 if __name__ == '__main__':

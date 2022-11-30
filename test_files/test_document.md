@@ -4266,6 +4266,18 @@ ___
 - **Duration:** 1 minute
 ___
 A common tool among bullies, this "curse" binds a creature's legs as if they were tied together with rope. A creature you can see within range must succeed on a Wisdom saving throw or have its speed halved and suffer disadvantage on Dexterity saving throws. Additionally, each time it moves within the duration, it must succeed on a Dexterity saving throw without disadvantage from this spell, or be knocked prone and take 2d4 bludgeoning damage.
+#### [Sectumsempra](#spell-list)
+<span id="spell-descr-Sectumsempra"></span>
+*The Lacerating Curse - 4th-level Curse*
+___
+- **Casting Time:** 1 action
+- **Range:** 60 feet
+- **Duration:** Instantaneous
+- **Tags:** Dark, School of Magic - *Jinxes, Hexes, and Curses*
+___
+Make a ranged spell attack against a target within range. On a hit, the target must make a Constitution saving throw. On a failed save, a creature takes 10d6 slashing damage and another 5d6 slashing damage at the end of its next turn. On a successful save, a creature takes half the initial damage and half the damage at the end of its next turn.
+
+***At Higher Levels.*** When you cast this spell using a spell slot of 5th level or higher, the initial damage increases by 2d6 for each slot level above 4th.
 #### [Vulnera Sanentur](#spell-list)
 <span id="spell-descr-Vulnera-Sanentur"></span>
 *The Regenerating Spell - 6th-level Healing*
