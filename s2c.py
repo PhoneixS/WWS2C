@@ -163,15 +163,35 @@ class Converter:
         
         return spells
     
+    def _convert_properties(self, spell: Spell) -> List[str]:
+        properties = []
+        if spell.casting_time:
+            properties.append('property | Casting time | ' + spell.casting_time)
+        if spell.duration:
+            properties.append('property | Duration | ' + spell.duration)
+        if spell.range:
+            properties.append('property | Range | ' + spell.range)
+    
+        if properties:
+            properties.insert(0, 'rule')
+            properties.append('rule')
+
+        return properties
+    
     def save_as_json(self, spells: List[Spell], file_name: str):
         spells_converted = []
         for spell in spells:
+
+            contents = [
+                    'subtitle | ' + spell.subtitle
+                ]
+
+            contents.extend(self._convert_properties(spell))
+
             spells_converted.append({
                 'count': 1,
                 'title': spell.title,
-                'contents': [
-                    'subtitle | ' + spell.subtitle
-                ]
+                'contents': contents
             })
         
         with open(file_name, 'w') as file:
